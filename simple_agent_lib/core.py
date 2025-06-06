@@ -227,7 +227,6 @@ class Agent:
             AgentStreamEvent: Agent事件流
         """
 
-        self.reset_history()
         self._add_user_message_to_context(initial_prompt)
 
         current_llm_api_id_for_turn: Optional[str] = None
