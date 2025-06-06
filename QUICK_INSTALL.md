@@ -48,14 +48,14 @@ python test_installation.py
 import simple_agent_lib
 print(f"版本: {simple_agent_lib.__version__}")
 
-from simple_agent_lib import Context, AutonomousAgent, tool
+from simple_agent_lib import Context, Agent, tool
 print("✅ 安装成功！")
 ```
 
 ## 🎯 快速开始
 
 ```python
-from simple_agent_lib import AutonomousAgent, Context, tool
+from simple_agent_lib import Agent, Context, tool
 
 # 定义工具
 @tool
@@ -71,7 +71,7 @@ def calculate(a: float, b: float, op: str) -> float:
 context = Context(max_tokens=4000, max_messages=50)
 
 # 创建智能体
-agent = AutonomousAgent(
+agent = Agent(
     context=context,
     system_prompt="你是一个数学助手"
 )

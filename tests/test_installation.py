@@ -25,7 +25,7 @@ def test_core_imports():
     try:
         from simple_agent_lib import (
             Context, 
-            AutonomousAgent, 
+            Agent, 
             tool, 
             ContextTokenLimitExceededError,
             LLMAPIClient,
@@ -116,7 +116,7 @@ def test_agent_creation():
     """测试智能体创建"""
     print("\n=== 测试智能体创建 ===")
     try:
-        from simple_agent_lib import AutonomousAgent, Context
+        from simple_agent_lib import Agent, Context
         
         # 创建上下文
         context = Context(max_tokens=1000, max_messages=50)
@@ -158,7 +158,7 @@ def main():
         print("🎉 所有测试通过！Agent Lib 安装成功且功能正常！")
         print("\n✨ 你现在可以开始使用 Agent Lib 了：")
         print("```python")
-        print("from simple_agent_lib import AutonomousAgent, Context, tool")
+        print("from simple_agent_lib import Agent, Context, tool")
         print("```")
     else:
         print("❌ 部分测试失败，请检查安装或依赖")

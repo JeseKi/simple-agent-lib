@@ -30,7 +30,7 @@ from simple_agent_lib.schemas import (
     AllToolResultsEvent,
 )
 from simple_agent_lib.tools import tool, get_tool_schemas
-from simple_agent_lib.core import LLMAPIClient, AutonomousAgent
+from simple_agent_lib.core import LLMAPIClient, Agent
 
 from dotenv import load_dotenv
 
@@ -178,7 +178,7 @@ def calculate_power(base: float, exponent: float) -> Dict[str, Any]:
 # === Agent设置和运行 ===
 
 
-async def create_agent() -> AutonomousAgent:
+async def create_agent() -> Agent:
     """创建并配置智能体"""
 
     # 配置LLM API客户端
@@ -205,7 +205,7 @@ async def create_agent() -> AutonomousAgent:
     )
 
     # 创建Agent，传入所有注册的工具
-    agent = AutonomousAgent(
+    agent = Agent(
         llm_api_client=llm_client,
         tools=[get_weather, run_python_code, http_get_request, calculate_power],
     )

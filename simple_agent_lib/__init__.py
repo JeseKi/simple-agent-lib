@@ -10,7 +10,7 @@ Agent Lib - 智能体框架库
 - ⚡ 异常处理 - 智能的错误处理和恢复策略
 
 使用示例:
-    from simple_agent_lib import AutonomousAgent, LLMAPIClient, tool
+    from simple_agent_lib import Agent, LLMAPIClient, tool
 
     @tool
     def get_weather(city: str) -> str:
@@ -19,10 +19,10 @@ Agent Lib - 智能体框架库
     llm_client = LLMAPIClient("https://api.openai.com/v1", "your-key", "gpt-4")
     
     # 生产环境 - 默认无日志
-    agent = AutonomousAgent(llm_api_client=llm_client)
+    agent = Agent(llm_api_client=llm_client)
     
     # 开发环境 - 启用日志
-    agent = AutonomousAgent(llm_api_client=llm_client, debug_mode=True)
+    agent = Agent(llm_api_client=llm_client, debug_mode=True)
     
     async for event in agent.run("北京天气怎么样？"):
         if hasattr(event, 'text'):
@@ -50,7 +50,7 @@ from .schemas import (
 
 from .tools import tool, get_tool_schemas, get_tool_registry, clear_tools
 
-from .core import AutonomousAgent
+from .core import Agent
 
 from .client import LLMAPIClient
 
@@ -71,7 +71,7 @@ from .exceptions import (
 __all__ = [
     # 核心类
     "LLMAPIClient",
-    "AutonomousAgent",
+    "Agent",
     # 工具相关
     "tool",
     "get_tool_schemas",

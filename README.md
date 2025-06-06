@@ -21,7 +21,7 @@ pip install simple-agent-lib
 ### 基础使用
 
 ```python
-from simple_agent_lib import AutonomousAgent, Context, tool
+from simple_agent_lib import Agent, Context, tool
 
 # 定义工具
 @tool
@@ -33,7 +33,7 @@ def get_weather(city: str) -> str:
 context = Context(max_tokens=4000, max_messages=50)
 
 # 创建智能体
-agent = AutonomousAgent(
+agent = Agent(
     context=context,
     system_prompt="你是一个智能助手"
 )

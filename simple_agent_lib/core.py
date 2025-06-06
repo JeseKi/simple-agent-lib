@@ -8,7 +8,7 @@
 
 公开接口:
 - LLMAPIClient: LLM API客户端
-- AutonomousAgent: 自主智能体类
+- Agent: 自主智能体类
 
 内部方法:
 - _StreamingToolCallAccumulator: 流式工具调用累加器
@@ -47,7 +47,7 @@ from .logger_config import (
 logger = get_logger("智能体")
 
 
-class AutonomousAgent:
+class Agent:
     """
     自主智能体
 
