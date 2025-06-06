@@ -80,7 +80,7 @@ class Agent:
 
         if tools is not None:
             # 使用提供的工具列表
-            self.registered_tools: Dict[str, Callable] = {
+            self.tools: Dict[str, Callable] = {
                 func.__name__: func for func in tools
             }
             self.tool_schemas: List[Dict[str, Any]] = [
@@ -90,7 +90,7 @@ class Agent:
             ]
         else:
             # 使用全局注册的工具
-            self.registered_tools = get_tool_registry()
+            self.tools = get_tool_registry()
             self.tool_schemas = get_tool_schemas()
 
         # 初始化上下文
@@ -168,7 +168,7 @@ class Agent:
             ToolResult: 工具执行结果
         """
         tool_name = tool_call.name
-        tool_func = self.registered_tools.get(tool_name)
+        tool_func = self.tools.get(tool_name)
 
         if not tool_func:
             return ToolResult(

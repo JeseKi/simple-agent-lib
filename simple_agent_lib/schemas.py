@@ -91,16 +91,16 @@ class APIResponseNonStreamed(BaseModel):
     system_fingerprint: Optional[str] = None
 
 
-class APIResponseChunk(BaseModel):
-    """流式API响应块模型"""
-
-    id: str
-    object: str  # "chat.completion.chunk"
-    created: int
-    model: str
-    choices: List[APIChoice]
-    system_fingerprint: Optional[str] = None
-    usage: Optional[APIUsage] = None
+# class APIResponseChunk(BaseModel):
+#     """流式API响应块模型"""
+# 
+#     id: str
+#     object: str  # "chat.completion.chunk"
+#     created: int
+#     model: str
+#     choices: List[APIChoice]
+#     system_fingerprint: Optional[str] = None
+#     usage: Optional[APIUsage] = None
 
 
 # --- Agent 输出的标准化数据模型 ---
