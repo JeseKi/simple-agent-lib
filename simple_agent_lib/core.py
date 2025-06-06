@@ -37,6 +37,15 @@ from .schemas import (
 )
 from .tools import get_tool_registry, get_tool_schemas
 
+from .logger_config import (
+    log_tool_execution,
+    log_agent_iteration,
+    log_agent_completion,
+    log_llm_interaction,
+    get_logger,
+)
+
+logger = get_logger("智能体")
 
 # 流式工具调用累加器
 class _StreamingToolCallAccumulator(BaseModel):
@@ -120,7 +129,32 @@ class LLMAPIClient:
                 json=payload,
                 timeout=30.0,
             ) as response:
-                response.raise_for_status()
+                # 在开始处理流之前检查状态码
+                if response.status_code >= 400:
+                    # 读取错误响应内容
+                    error_content = b""
+                    async for chunk in response.aiter_bytes():
+                        error_content += chunk
+                    
+                    # 尝试解析错误信息
+                    try:
+                        error_text = error_content.decode('utf-8')
+                        error_json = json.loads(error_text)
+                        if isinstance(error_json, dict) and "error" in error_json:
+                            error_info = error_json["error"]
+                            if isinstance(error_info, dict) and "message" in error_info:
+                                error_details = f"API错误: {error_info['message']}"
+                            else:
+                                error_details = f"API错误: {error_info}"
+                        else:
+                            error_details = f"响应内容: {error_text[:200]}..."
+                    except Exception:
+                        error_details = f"HTTP {response.status_code} 错误"
+                    
+                    logger.error(f"[错误] HTTP错误: {response.status_code} - {error_details}")
+                    response.raise_for_status()
+                
+                # 如果状态码正常，继续处理流
 
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
@@ -197,7 +231,7 @@ class LLMAPIClient:
                                                         llm_response_id=current_llm_api_id,
                                                     )
                                                 except json.JSONDecodeError as e:
-                                                    print(
+                                                    logger.error(
                                                         f"[错误] 解析工具参数失败 {acc.name}: {e}"
                                                     )
 
@@ -242,7 +276,7 @@ class LLMAPIClient:
                                             llm_response_id=current_llm_api_id,
                                         )
                                     except json.JSONDecodeError as e:
-                                        print(
+                                        logger.error(
                                             f"[错误] 解析工具参数失败 {acc_rem.name}: {e}"
                                         )
 
@@ -253,15 +287,15 @@ class LLMAPIClient:
                                 )
 
                         except json.JSONDecodeError as e:
-                            print(f"[警告] JSON解码失败: {e}, 行: '{data_json_str}'")
+                            logger.warning(f"[警告] JSON解码失败: {e}, 行: '{data_json_str}'")
                         except Exception as e:
-                            print(f"[错误] 处理SSE块失败: {e}, 行: '{data_json_str}'")
+                            logger.error(f"[错误] 处理SSE块失败: {e}, 行: '{data_json_str}'")
 
-        except httpx.HTTPStatusError as e:
-            print(f"[错误] HTTP错误: {e.response.status_code} - {e.response.text}")
+        except httpx.HTTPStatusError:
+            # 错误已经在上面被记录了，这里只需要重新抛出
             raise
         except httpx.RequestError as e:
-            print(f"[错误] 请求错误: {e}")
+            logger.error(f"[错误] 请求错误: {e}")
             raise
 
     async def chat_completion_non_stream(
@@ -324,21 +358,36 @@ class LLMAPIClient:
                                     )
                                 )
                             except json.JSONDecodeError as e:
-                                print(
+                                logger.error(
                                     f"[错误] 非流式模式解析工具参数失败 {tc_api.function.name}: {e}, 原始: '{tc_api.function.arguments}'"
                                 )
             return output
 
         except httpx.HTTPStatusError as e:
-            print(
-                f"[错误] 非流式HTTP错误: {e.response.status_code} - {e.response.text}"
+            # 安全地获取错误详情
+            try:
+                error_text = e.response.text
+                error_json = json.loads(error_text)
+                if isinstance(error_json, dict) and "error" in error_json:
+                    error_info = error_json["error"]
+                    if isinstance(error_info, dict) and "message" in error_info:
+                        error_details = f"API错误: {error_info['message']}"
+                    else:
+                        error_details = f"API错误: {error_info}"
+                else:
+                    error_details = f"响应内容: {error_text[:200]}..."
+            except Exception:
+                error_details = f"HTTP {e.response.status_code} 错误"
+            
+            logger.error(
+                f"[错误] 非流式HTTP错误: {e.response.status_code} - {error_details}"
             )
             raise
         except httpx.RequestError as e:
-            print(f"[错误] 非流式请求错误: {e}")
+            logger.error(f"[错误] 非流式请求错误: {e}")
             raise
         except json.JSONDecodeError as e:
-            print(f"[错误] 非流式JSON解码失败: {e}")
+            logger.error(f"[错误] 非流式JSON解码失败: {e}")
             raise
 
 
@@ -475,14 +524,12 @@ class AutonomousAgent:
             else:
                 result = tool_func(**tool_call.args)
 
-            from .logger_config import log_tool_execution
 
             log_tool_execution(tool_name, tool_call.args, True, result=result)
             return ToolResult(
                 tool_call_id=tool_call.call_id, name=tool_name, result=result
             )
         except Exception as e:
-            from .logger_config import log_tool_execution
 
             # error_details = traceback.format_exc()
             log_tool_execution(tool_name, tool_call.args, False, error=str(e))
@@ -519,7 +566,6 @@ class AutonomousAgent:
         Yields:
             AgentStreamEvent: Agent事件流
         """
-        from .logger_config import log_agent_iteration, log_agent_completion
 
         self.reset_history()
         self._add_user_message_to_context(initial_prompt)
@@ -538,7 +584,6 @@ class AutonomousAgent:
             llm_had_finish_reason: Optional[str] = None
 
             if stream_mode:
-                from .logger_config import log_llm_interaction
 
                 log_llm_interaction("调用LLM (流式模式)")
                 async for event in self.llm_api_client.chat_completion_stream(
@@ -559,14 +604,12 @@ class AutonomousAgent:
                             )
                             return
                         elif event.finish_reason == "tool_calls":
-                            from .logger_config import get_logger
 
-                            logger = get_logger("智能体")
                             logger.info(
                                 f"LLM请求 {len(pending_tool_calls_from_llm)} 个工具"
                             )
             else:
-                from .logger_config import log_llm_interaction
+
 
                 log_llm_interaction("调用LLM (非流式模式)")
                 llm_output: LLMOutput = (
@@ -605,9 +648,7 @@ class AutonomousAgent:
                     )
                     return
                 elif llm_output.finish_reason == "tool_calls":
-                    from .logger_config import get_logger
 
-                    logger = get_logger("智能体")
                     logger.info(f"LLM请求 {len(pending_tool_calls_from_llm)} 个工具")
 
             if (
@@ -642,9 +683,9 @@ class AutonomousAgent:
 
             # 执行工具
             executed_tool_results: List[ToolResult] = []
-            print(f"  执行 {len(pending_tool_calls_from_llm)} 个工具...")
+            logger.debug(f"  执行 {len(pending_tool_calls_from_llm)} 个工具...")
             for tool_to_call in pending_tool_calls_from_llm:
-                print(f"    调用: {tool_to_call.name} 参数: {tool_to_call.args}")
+                logger.debug(f"    调用: {tool_to_call.name} 参数: {tool_to_call.args}")
                 result = await self._execute_tool(tool_to_call)
                 executed_tool_results.append(result)
 
@@ -660,4 +701,4 @@ class AutonomousAgent:
             pending_tool_calls_from_llm.clear()
 
             if iteration == max_iterations - 1:
-                print(f"[警告] Agent达到最大迭代次数 ({max_iterations})。")
+                logger.info(f"[警告] Agent达到最大迭代次数 ({max_iterations})。")

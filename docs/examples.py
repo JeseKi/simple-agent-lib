@@ -186,9 +186,7 @@ async def create_agent() -> AutonomousAgent:
         "OPENAI_API_BASE", "https://api.openai.com/v1"
     )  # 例如: "http://localhost:8000/v1"
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sk-proj-1234567890")
-    logger.info(f"OPENAI_API_BASE: {OPENAI_API_BASE}")
-    logger.info(f"OPENAI_API_KEY: {OPENAI_API_KEY}")
-    LLM_MODEL_NAME = "Qwen3-235B-A20B"  # 或您使用的模型名称
+    LLM_MODEL_NAME = "Qwen3-235B-A22B"  # 或您使用的模型名称
 
     if (
         OPENAI_API_BASE == "YOUR_LLM_API_BASE_URL"
