@@ -42,7 +42,16 @@ from .schemas import (
 
 from .tools import tool, get_tool_schemas, get_tool_registry, clear_tools
 
-from .core import LLMAPIClient, AutonomousAgent
+from .core import AutonomousAgent
+
+from .client import LLMAPIClient
+
+from .logger_config import (
+    enable_logging,
+    disable_logging,
+    is_logging_enabled,
+    setup_logger,
+)
 
 from .exceptions import (
     ContextTokenLimitExceededError,
@@ -60,6 +69,11 @@ __all__ = [
     "get_tool_schemas",
     "get_tool_registry",
     "clear_tools",
+    # 日志控制
+    "enable_logging",
+    "disable_logging",
+    "is_logging_enabled",
+    "setup_logger",
     # 类型定义
     "ToolCall",
     "ToolResult",

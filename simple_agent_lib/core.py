@@ -41,6 +41,7 @@ from .logger_config import (
     log_agent_completion,
     log_llm_interaction,
     get_logger,
+    enable_logging,
 )
 
 logger = get_logger("智能体")
@@ -59,6 +60,8 @@ class AutonomousAgent:
         tools: Optional[List[Callable]] = None,
         system_prompt: Optional[str] = None,
         context: Optional[Context] = None,
+        debug_mode: bool = False,
+        log_level: str = "INFO",
     ):
         """
         初始化自主智能体
@@ -68,7 +71,11 @@ class AutonomousAgent:
             tools: 可用工具列表，如果为None则使用全局注册的工具
             system_prompt: 系统提示词，如果提供则自动添加到上下文
             context: 上下文管理器，如果为None则创建新的空上下文
+            debug_mode: 是否启用调试模式（控制库的日志输出），默认False
+            log_level: 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         """
+        # 设置日志状态
+        enable_logging(debug_mode, log_level)
         self.llm_api_client = llm_api_client
 
         if tools is not None:
