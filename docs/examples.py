@@ -30,7 +30,7 @@ from simple_agent_lib.schemas import (
     AllToolResultsEvent,
 )
 from simple_agent_lib.tools import tool, get_tool_schemas
-from simple_agent_lib.core import LLMAPIClient, Agent
+from simple_agent_lib import LLMAPIClient, Agent
 
 from dotenv import load_dotenv
 
