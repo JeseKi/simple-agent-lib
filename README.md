@@ -15,13 +15,13 @@
 ### 安装
 
 ```bash
-pip install agent-lib
+pip install simple-agent-lib
 ```
 
 ### 基础使用
 
 ```python
-from agent_lib import AutonomousAgent, Context, tool
+from simple_agent_lib import AutonomousAgent, Context, tool
 
 # 定义工具
 @tool
@@ -46,7 +46,7 @@ print(response)
 ### 上下文记忆
 
 ```python
-from agent_lib import Context
+from simple_agent_lib import Context
 
 # 创建带限制的上下文
 context = Context(max_tokens=1000, max_messages=20)
@@ -67,7 +67,7 @@ print(f"估算tokens: {context.estimate_tokens()}")
 ### 异常处理
 
 ```python
-from agent_lib import Context, ContextTokenLimitExceededError
+from simple_agent_lib import Context, ContextTokenLimitExceededError
 
 try:
     context = Context(max_tokens=50)
@@ -100,8 +100,8 @@ pytest
 ### 代码格式化
 
 ```bash
-black agent_lib/
-isort agent_lib/
+black simple_agent_lib/
+isort simple_agent_lib/
 ```
 
 ## 📋 需求
@@ -120,6 +120,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 🔗 相关链接
 
-- [GitHub 仓库](https://github.com/yourusername/agent-lib)
-- [问题反馈](https://github.com/yourusername/agent-lib/issues)
+- [GitHub 仓库](https://github.com/yourusername/simple-agent-lib)
+- [问题反馈](https://github.com/yourusername/simple-agent-lib/issues)
 - [更新日志](CHANGELOG.md) 

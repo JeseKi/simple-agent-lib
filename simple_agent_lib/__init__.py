@@ -10,7 +10,7 @@ Agent Lib - 智能体框架库
 - ⚡ 异常处理 - 智能的错误处理和恢复策略
 
 使用示例:
-    from agent_lib import AutonomousAgent, Context, tool
+    from simple_agent_lib import AutonomousAgent, Context, tool
 
     @tool
     def get_weather(city: str) -> str:

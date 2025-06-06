@@ -4,4 +4,4 @@ temp*
 *.log
 .env
 dist
-agent_lib.egg-info
+simple_agent_lib.egg-info

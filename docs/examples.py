@@ -20,17 +20,17 @@ import subprocess
 import tempfile
 from typing import Dict, Any
 from pydantic import BaseModel
+from loguru import logger
 
 # 导入我们的框架组件
-from agent_lib.schemas import (
+from simple_agent_lib.schemas import (
     ReasoningChunkEvent,
     ContentChunkEvent,
     ToolCallCompleteEvent,
     AllToolResultsEvent,
-    LLMEndReasonEvent,
 )
-from agent_lib.tools import tool, get_tool_schemas
-from agent_lib.core import LLMAPIClient, AutonomousAgent
+from simple_agent_lib.tools import tool, get_tool_schemas
+from simple_agent_lib.core import LLMAPIClient, AutonomousAgent
 
 from dotenv import load_dotenv
 
@@ -186,6 +186,8 @@ async def create_agent() -> AutonomousAgent:
         "OPENAI_API_BASE", "https://api.openai.com/v1"
     )  # 例如: "http://localhost:8000/v1"
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sk-proj-1234567890")
+    logger.info(f"OPENAI_API_BASE: {OPENAI_API_BASE}")
+    logger.info(f"OPENAI_API_KEY: {OPENAI_API_KEY}")
     LLM_MODEL_NAME = "Qwen3-235B-A20B"  # 或您使用的模型名称
 
     if (

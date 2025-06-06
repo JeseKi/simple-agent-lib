@@ -22,17 +22,17 @@ pip install -e ".[dev]"
 python -m build
 
 # 安装wheel包
-pip install dist/agent_lib-1.2.0-py3-none-any.whl
+pip install dist/simple_agent_lib-1.2.0-py3-none-any.whl
 
 # 或安装源码包
-pip install dist/agent_lib-1.2.0.tar.gz
+pip install dist/simple_agent_lib-1.2.0.tar.gz
 ```
 
 ### 3. 未来从PyPI安装
 
 ```bash
 # 当发布到PyPI后
-pip install agent-lib
+pip install simple-agent-lib
 ```
 
 ## ✅ 验证安装
@@ -45,17 +45,17 @@ python test_installation.py
 或者手动验证：
 
 ```python
-import agent_lib
-print(f"版本: {agent_lib.__version__}")
+import simple_agent_lib
+print(f"版本: {simple_agent_lib.__version__}")
 
-from agent_lib import Context, AutonomousAgent, tool
+from simple_agent_lib import Context, AutonomousAgent, tool
 print("✅ 安装成功！")
 ```
 
 ## 🎯 快速开始
 
 ```python
-from agent_lib import AutonomousAgent, Context, tool
+from simple_agent_lib import AutonomousAgent, Context, tool
 
 # 定义工具
 @tool

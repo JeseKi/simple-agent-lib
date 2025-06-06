@@ -6,7 +6,7 @@ include requirements.txt
 include pyproject.toml
 
 # 包含类型提示文件
-include agent_lib/py.typed
+include simple_agent_lib/py.typed
 
 # 排除测试文件和临时文件
 global-exclude *.pyc

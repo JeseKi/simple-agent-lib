@@ -9,10 +9,10 @@ def test_basic_import():
     """测试基础导入"""
     print("=== 测试基础导入 ===")
     try:
-        import agent_lib
-        print(f"✅ Agent Lib 版本: {agent_lib.__version__}")
-        print(f"✅ 作者: {agent_lib.__author__}")
-        print(f"✅ 描述: {agent_lib.__description__}")
+        import simple_agent_lib
+        print(f"✅ Agent Lib 版本: {simple_agent_lib.__version__}")
+        print(f"✅ 作者: {simple_agent_lib.__author__}")
+        print(f"✅ 描述: {simple_agent_lib.__description__}")
         return True
     except Exception as e:
         print(f"❌ 基础导入失败: {e}")
@@ -23,7 +23,7 @@ def test_core_imports():
     """测试核心功能导入"""
     print("\n=== 测试核心功能导入 ===")
     try:
-        from agent_lib import (
+        from simple_agent_lib import (
             Context, 
             AutonomousAgent, 
             tool, 
@@ -43,7 +43,7 @@ def test_context_functionality():
     """测试上下文功能"""
     print("\n=== 测试上下文功能 ===")
     try:
-        from agent_lib import Context
+        from simple_agent_lib import Context
         
         # 创建上下文
         context = Context(max_tokens=100, max_messages=10)
@@ -66,7 +66,7 @@ def test_tool_decorator():
     """测试工具装饰器"""
     print("\n=== 测试工具装饰器 ===")
     try:
-        from agent_lib import tool, get_tool_registry
+        from simple_agent_lib import tool, get_tool_registry
         
         @tool
         def test_tool(x: int) -> str:
@@ -93,7 +93,7 @@ def test_exception_handling():
     """测试异常处理"""
     print("\n=== 测试异常处理 ===")
     try:
-        from agent_lib import Context, ContextTokenLimitExceededError
+        from simple_agent_lib import Context, ContextTokenLimitExceededError
         
         # 测试token超限异常
         try:
@@ -116,7 +116,7 @@ def test_agent_creation():
     """测试智能体创建"""
     print("\n=== 测试智能体创建 ===")
     try:
-        from agent_lib import AutonomousAgent, Context
+        from simple_agent_lib import AutonomousAgent, Context
         
         # 创建上下文
         context = Context(max_tokens=1000, max_messages=50)
@@ -158,7 +158,7 @@ def main():
         print("🎉 所有测试通过！Agent Lib 安装成功且功能正常！")
         print("\n✨ 你现在可以开始使用 Agent Lib 了：")
         print("```python")
-        print("from agent_lib import AutonomousAgent, Context, tool")
+        print("from simple_agent_lib import AutonomousAgent, Context, tool")
         print("```")
     else:
         print("❌ 部分测试失败，请检查安装或依赖")

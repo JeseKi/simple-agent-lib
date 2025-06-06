@@ -26,14 +26,14 @@ except FileNotFoundError:
     ]
 
 setup(
-    name="agent-lib",
+    name="simple-agent-lib",
     version="1.2.0",
     author="Jese Ki",
     author_email="209490107@qq.com",  # 替换为你的邮箱
     description="智能体框架库 - 提供上下文记忆、工具调用和LLM交互功能",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/agent-lib",  # 替换为你的GitHub地址
+    url="https://github.com/yourusername/simple-agent-lib",  # 替换为你的GitHub地址
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -66,14 +66,14 @@ setup(
     entry_points={
         "console_scripts": [
             # 如果需要命令行工具，可以在这里添加
-            # "agent-cli=agent_lib.cli:main",
+            # "agent-cli=simple_agent_lib.cli:main",
         ],
     },
     keywords="ai, agent, llm, openai, context, memory, tools",
     project_urls={
-        "Bug Reports": "https://github.com/yourusername/agent-lib/issues",
-        "Source": "https://github.com/yourusername/agent-lib",
-        "Documentation": "https://github.com/yourusername/agent-lib/blob/main/CONTEXT_MEMORY_GUIDE.md",
+        "Bug Reports": "https://github.com/yourusername/simple-agent-lib/issues",
+        "Source": "https://github.com/yourusername/simple-agent-lib",
+        "Documentation": "https://github.com/yourusername/simple-agent-lib/blob/main/CONTEXT_MEMORY_GUIDE.md",
     },
     include_package_data=True,
     zip_safe=False,
