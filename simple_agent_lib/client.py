@@ -50,6 +50,7 @@ class LLMAPIClient:
         model_name: str,
         base_url: str = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
         api_key: str = os.getenv("OPENAI_API_KEY", ""),
+        temperature: float = 1.0,
         httpx_client: Optional[httpx.AsyncClient] = None,
     ):
         """
@@ -64,6 +65,7 @@ class LLMAPIClient:
         self.model_name = model_name
         self.base_url = base_url
         self.api_key = api_key
+        self.temperature = temperature
         self._client = httpx_client or httpx.AsyncClient()
         self._headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -90,6 +92,7 @@ class LLMAPIClient:
             "model": self.model_name,
             "messages": messages,
             "stream": True,
+            "temperature": self.temperature,
         }
         if tools:
             payload["tools"] = tools
