@@ -58,6 +58,7 @@ def get_weather(city: str) -> WeatherResponse:
         WeatherResponse: 天气信息
     """
     print(f"[工具执行] 获取 {city} 的天气信息")
+    # raise Exception("无法获取天气信息，请检查您的网络连接！") # 测试错误处理
     weather_conditions = ["晴天", "多云", "阴天", "小雨", "大雨", "暴风雨"]
     return WeatherResponse(
         city=city,
@@ -186,7 +187,7 @@ async def create_agent() -> AutonomousAgent:
         "OPENAI_API_BASE", "https://api.openai.com/v1"
     )  # 例如: "http://localhost:8000/v1"
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sk-proj-1234567890")
-    LLM_MODEL_NAME = "Qwen3-235B-A22B"  # 或您使用的模型名称
+    LLM_MODEL_NAME = "Qwen3-32B"  # 或您使用的模型名称
 
     if (
         OPENAI_API_BASE == "YOUR_LLM_API_BASE_URL"
@@ -252,6 +253,8 @@ async def run_example_task():
                 print(f"\n🔧 调用工具: {event.tool_call.name}")
             elif isinstance(event, AllToolResultsEvent):
                 print("✅ 工具执行完成")
+                
+        logger.info(f"完整上下文：{agent.context.messages}")
 
     except Exception as e:
         print(f"❌ 任务执行出错: {e}")
@@ -290,6 +293,8 @@ async def simple_weather_example():
             print(f"\n🔧 调用工具: {event.tool_call.name}")
         elif isinstance(event, AllToolResultsEvent):
             print("✅ 工具执行完成")
+            
+    logger.info(f"完整上下文：{agent.context.messages}")
 
     # 如果捕获到了推理内容，显示总结
     if reasoning_content:
