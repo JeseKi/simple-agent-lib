@@ -186,13 +186,11 @@ class Agent:
             else:
                 result = tool_func(**tool_call.args)
 
-
             log_tool_execution(tool_name, tool_call.args, True, result=result)
             return ToolResult(
                 tool_call_id=tool_call.call_id, name=tool_name, result=result
             )
         except Exception as e:
-
             # error_details = traceback.format_exc()
             log_tool_execution(tool_name, tool_call.args, False, error=str(e))
             return ToolResult(
@@ -246,7 +244,6 @@ class Agent:
             llm_had_finish_reason: Optional[str] = None
 
             if stream_mode:
-
                 log_llm_interaction("调用LLM (流式模式)")
                 async for event in self.llm_api_client.chat_completion_stream(
                     self.message_history, self.tool_schemas
@@ -266,13 +263,10 @@ class Agent:
                             )
                             return
                         elif event.finish_reason == "tool_calls":
-
                             logger.info(
                                 f"LLM请求 {len(pending_tool_calls_from_llm)} 个工具"
                             )
             else:
-
-
                 log_llm_interaction("调用LLM (非流式模式)")
                 llm_output: LLMOutput = (
                     await self.llm_api_client.chat_completion_non_stream(
@@ -310,7 +304,6 @@ class Agent:
                     )
                     return
                 elif llm_output.finish_reason == "tool_calls":
-
                     logger.info(f"LLM请求 {len(pending_tool_calls_from_llm)} 个工具")
 
             if (

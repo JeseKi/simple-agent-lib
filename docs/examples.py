@@ -253,7 +253,7 @@ async def run_example_task():
                 print(f"\n🔧 调用工具: {event.tool_call.name}")
             elif isinstance(event, AllToolResultsEvent):
                 print("✅ 工具执行完成")
-                
+
         logger.info(f"完整上下文：{agent.context.messages}")
 
     except Exception as e:
@@ -293,7 +293,7 @@ async def simple_weather_example():
             print(f"\n🔧 调用工具: {event.tool_call.name}")
         elif isinstance(event, AllToolResultsEvent):
             print("✅ 工具执行完成")
-            
+
     logger.info(f"完整上下文：{agent.context.messages}")
 
     # 如果捕获到了推理内容，显示总结

@@ -16,7 +16,9 @@ except FileNotFoundError:
 # 读取依赖列表
 try:
     with open("requirements.txt", "r", encoding="utf-8") as fh:
-        requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+        requirements = [
+            line.strip() for line in fh if line.strip() and not line.startswith("#")
+        ]
 except FileNotFoundError:
     requirements = [
         "pydantic>=2.0.0",
@@ -77,4 +79,4 @@ setup(
     },
     include_package_data=True,
     zip_safe=False,
-) 
+)

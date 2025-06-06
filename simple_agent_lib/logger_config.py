@@ -40,10 +40,11 @@ logger.remove()
 _LOGGING_ENABLED = False  # 默认禁用日志
 _CURRENT_LOG_LEVEL = "INFO"
 
+
 def enable_logging(enabled: bool = True, log_level: str = "INFO") -> None:
     """
     启用或禁用库的日志输出
-    
+
     Args:
         enabled: 是否启用日志
         log_level: 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -51,11 +52,12 @@ def enable_logging(enabled: bool = True, log_level: str = "INFO") -> None:
     global _LOGGING_ENABLED, _CURRENT_LOG_LEVEL
     _LOGGING_ENABLED = enabled
     _CURRENT_LOG_LEVEL = log_level
-    
+
     if enabled:
         setup_logger(log_level=log_level)
     else:
         disable_logging()
+
 
 def disable_logging() -> None:
     """完全禁用库的日志输出"""
@@ -64,21 +66,23 @@ def disable_logging() -> None:
     # 移除所有现有的日志处理器
     logger.remove()
 
+
 def is_logging_enabled() -> bool:
     """检查日志是否启用"""
     return _LOGGING_ENABLED
 
+
 def setup_logger(
-    log_file: str = "temp.log", 
+    log_file: str = "temp.log",
     log_level: str = "INFO",
     console_output: bool = True,
     file_output: bool = True,
     max_file_size: str = "10 MB",
-    rotation_count: int = 3
+    rotation_count: int = 3,
 ) -> None:
     """
     设置日志配置
-    
+
     Args:
         log_file: 日志文件路径
         log_level: 日志级别
@@ -89,14 +93,14 @@ def setup_logger(
     """
     global _CURRENT_LOG_LEVEL
     _CURRENT_LOG_LEVEL = log_level
-    
+
     # 先移除现有的处理器
     logger.remove()
-    
+
     # 如果日志被禁用，直接返回
     if not _LOGGING_ENABLED:
         return
-    
+
     # 控制台日志配置
     if console_output:
         console_format = (
@@ -111,9 +115,9 @@ def setup_logger(
             level=log_level,
             colorize=True,
             backtrace=True,
-            diagnose=True
+            diagnose=True,
         )
-    
+
     # 文件日志配置
     if file_output:
         file_format = (
@@ -131,39 +135,60 @@ def setup_logger(
             compression="zip",
             encoding="utf-8",
             backtrace=True,
-            diagnose=True
+            diagnose=True,
         )
+
 
 def get_logger(name: Optional[str] = None):
     """
     获取日志器实例
-    
+
     Args:
         name: 日志器名称
-        
+
     Returns:
         logger实例
     """
     if not _LOGGING_ENABLED:
         # 返回一个空的日志器，所有方法都不执行任何操作
         class NoOpLogger:
-            def debug(self, *args, **kwargs): pass
-            def info(self, *args, **kwargs): pass
-            def warning(self, *args, **kwargs): pass
-            def error(self, *args, **kwargs): pass
-            def critical(self, *args, **kwargs): pass
-            def success(self, *args, **kwargs): pass
-            def trace(self, *args, **kwargs): pass
-            def bind(self, **kwargs): return self
+            def debug(self, *args, **kwargs):
+                pass
+
+            def info(self, *args, **kwargs):
+                pass
+
+            def warning(self, *args, **kwargs):
+                pass
+
+            def error(self, *args, **kwargs):
+                pass
+
+            def critical(self, *args, **kwargs):
+                pass
+
+            def success(self, *args, **kwargs):
+                pass
+
+            def trace(self, *args, **kwargs):
+                pass
+
+            def bind(self, **kwargs):
+                return self
+
         return NoOpLogger()
-    
+
     if name:
         return logger.bind(name=name)
     return logger
 
+
 # 预定义的日志记录函数
 
-def log_tool_registration(tool_name: str, params: list, schema_info: Optional[Dict] = None):
+
+def log_tool_registration(
+    tool_name: str, params: list, schema_info: Optional[Dict] = None
+):
     """记录工具注册信息"""
     if not _LOGGING_ENABLED:
         return
@@ -171,6 +196,7 @@ def log_tool_registration(tool_name: str, params: list, schema_info: Optional[Di
     logger.info(f"工具 '{tool_name}' 已注册，参数: {params}")
     if schema_info:
         logger.debug(f"工具 '{tool_name}' Schema详情: {schema_info}")
+
 
 def log_agent_iteration(iteration: int, total_iterations: Optional[int] = None):
     """记录Agent迭代信息"""
@@ -182,7 +208,14 @@ def log_agent_iteration(iteration: int, total_iterations: Optional[int] = None):
     else:
         logger.info(f"--- Agent迭代 {iteration} ---")
 
-def log_tool_execution(tool_name: str, args: Dict[str, Any], success: bool, result: Any = None, error: Optional[str] = None):
+
+def log_tool_execution(
+    tool_name: str,
+    args: Dict[str, Any],
+    success: bool,
+    result: Any = None,
+    error: Optional[str] = None,
+):
     """记录工具执行信息"""
     if not _LOGGING_ENABLED:
         return
@@ -198,7 +231,10 @@ def log_tool_execution(tool_name: str, args: Dict[str, Any], success: bool, resu
     else:
         logger.error(f"工具 '{tool_name}' 执行失败，参数: {args}，错误: {error}")
 
-def log_llm_interaction(action: str, details: Optional[str] = None, error: Optional[str] = None):
+
+def log_llm_interaction(
+    action: str, details: Optional[str] = None, error: Optional[str] = None
+):
     """记录LLM交互信息"""
     if not _LOGGING_ENABLED:
         return
@@ -212,7 +248,10 @@ def log_llm_interaction(action: str, details: Optional[str] = None, error: Optio
         if details:
             logger.debug(f"详细信息: {details}")
 
-def log_agent_event(event_type: str, content: str, llm_response_id: Optional[str] = None):
+
+def log_agent_event(
+    event_type: str, content: str, llm_response_id: Optional[str] = None
+):
     """记录Agent事件"""
     if not _LOGGING_ENABLED:
         return
@@ -222,7 +261,10 @@ def log_agent_event(event_type: str, content: str, llm_response_id: Optional[str
     else:
         logger.debug(f"[{event_type}] {content}")
 
-def log_tool_call_parsing(success: bool, tool_name: str, args: Dict[str, Any], error: Optional[str] = None):
+
+def log_tool_call_parsing(
+    success: bool, tool_name: str, args: Dict[str, Any], error: Optional[str] = None
+):
     """记录工具调用解析"""
     if not _LOGGING_ENABLED:
         return
@@ -232,6 +274,7 @@ def log_tool_call_parsing(success: bool, tool_name: str, args: Dict[str, Any], e
     else:
         logger.warning(f"工具调用解析失败: {tool_name}，错误: {error}")
 
+
 def log_schema_generation(tool_name: str, schema: Dict[str, Any]):
     """记录Schema生成"""
     if not _LOGGING_ENABLED:
@@ -240,7 +283,13 @@ def log_schema_generation(tool_name: str, schema: Dict[str, Any]):
     logger.debug(f"为工具 '{tool_name}' 生成Schema")
     logger.trace(f"Schema内容: {schema}")
 
-def log_http_request(method: str, url: str, status_code: Optional[int] = None, error: Optional[str] = None):
+
+def log_http_request(
+    method: str,
+    url: str,
+    status_code: Optional[int] = None,
+    error: Optional[str] = None,
+):
     """记录HTTP请求"""
     if not _LOGGING_ENABLED:
         return
@@ -250,15 +299,21 @@ def log_http_request(method: str, url: str, status_code: Optional[int] = None, e
     else:
         logger.info(f"{method} {url} 响应码: {status_code}")
 
-def log_agent_completion(reason: str, iterations_used: int, max_iterations: Optional[int] = None):
+
+def log_agent_completion(
+    reason: str, iterations_used: int, max_iterations: Optional[int] = None
+):
     """记录Agent完成信息"""
     if not _LOGGING_ENABLED:
         return
     logger = get_logger("智能体")
     if max_iterations and max_iterations > 0:
-        logger.info(f"Agent执行完成，原因: {reason}，使用迭代: {iterations_used}/{max_iterations}")
+        logger.info(
+            f"Agent执行完成，原因: {reason}，使用迭代: {iterations_used}/{max_iterations}"
+        )
     else:
         logger.info(f"Agent执行完成，原因: {reason}，使用迭代: {iterations_used}")
+
 
 # 默认设置日志器
 setup_logger()

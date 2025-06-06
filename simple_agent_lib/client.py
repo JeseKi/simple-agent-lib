@@ -27,6 +27,7 @@ from .logger_config import (
 
 logger = get_logger("智能体")
 
+
 class _StreamingToolCallAccumulator(BaseModel):
     """内部使用的流式工具调用累加器"""
 
@@ -114,10 +115,10 @@ class LLMAPIClient:
                     error_content = b""
                     async for chunk in response.aiter_bytes():
                         error_content += chunk
-                    
+
                     # 尝试解析错误信息
                     try:
-                        error_text = error_content.decode('utf-8')
+                        error_text = error_content.decode("utf-8")
                         error_json = json.loads(error_text)
                         if isinstance(error_json, dict) and "error" in error_json:
                             error_info = error_json["error"]
@@ -129,10 +130,12 @@ class LLMAPIClient:
                             error_details = f"响应内容: {error_text[:200]}..."
                     except Exception:
                         error_details = f"HTTP {response.status_code} 错误"
-                    
-                    logger.error(f"[错误] HTTP错误: {response.status_code} - {error_details}")
+
+                    logger.error(
+                        f"[错误] HTTP错误: {response.status_code} - {error_details}"
+                    )
                     response.raise_for_status()
-                
+
                 # 如果状态码正常，继续处理流
 
                 async for line in response.aiter_lines():
@@ -266,9 +269,13 @@ class LLMAPIClient:
                                 )
 
                         except json.JSONDecodeError as e:
-                            logger.warning(f"[警告] JSON解码失败: {e}, 行: '{data_json_str}'")
+                            logger.warning(
+                                f"[警告] JSON解码失败: {e}, 行: '{data_json_str}'"
+                            )
                         except Exception as e:
-                            logger.error(f"[错误] 处理SSE块失败: {e}, 行: '{data_json_str}'")
+                            logger.error(
+                                f"[错误] 处理SSE块失败: {e}, 行: '{data_json_str}'"
+                            )
 
         except httpx.HTTPStatusError:
             # 错误已经在上面被记录了，这里只需要重新抛出
@@ -357,7 +364,7 @@ class LLMAPIClient:
                     error_details = f"响应内容: {error_text[:200]}..."
             except Exception:
                 error_details = f"HTTP {e.response.status_code} 错误"
-            
+
             logger.error(
                 f"[错误] 非流式HTTP错误: {e.response.status_code} - {error_details}"
             )

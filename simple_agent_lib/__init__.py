@@ -17,13 +17,13 @@ Agent Lib - 智能体框架库
         return f"{city}今天晴朗，温度25°C"
 
     llm_client = LLMAPIClient("https://api.openai.com/v1", "your-key", "gpt-4")
-    
+
     # 生产环境 - 默认无日志
     agent = Agent(llm_api_client=llm_client)
-    
+
     # 开发环境 - 启用日志
     agent = Agent(llm_api_client=llm_client, debug_mode=True)
-    
+
     async for event in agent.run("北京天气怎么样？"):
         if hasattr(event, 'text'):
             print(event.text, end='')
