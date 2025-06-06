@@ -21,7 +21,7 @@ pip install simple-agent-lib
 ### 基础使用
 
 ```python
-from simple_agent_lib import Agent, Context, tool
+from simple_agent_lib import Agent, Context, tool, LLMClinet
 
 # 定义工具
 @tool

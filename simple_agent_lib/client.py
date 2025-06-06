@@ -4,6 +4,7 @@ LLM API客户端
 负责与OpenAI兼容的API进行交互，支持流式和非流式调用
 """
 
+import os
 import httpx
 import json
 from typing import List, Dict, Any, Optional, AsyncIterator
@@ -45,23 +46,23 @@ class LLMAPIClient:
 
     def __init__(
         self,
-        base_url: str,
-        api_key: str,
         model_name: str,
+        base_url: str = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+        api_key: str = os.getenv("OPENAI_API_KEY", ""),
         httpx_client: Optional[httpx.AsyncClient] = None,
     ):
         """
         初始化LLM API客户端
 
         Args:
+            model_name: 模型名称
             base_url: API基础URL
             api_key: API密钥
-            model_name: 模型名称
             httpx_client: 可选的httpx异步客户端
         """
+        self.model_name = model_name
         self.base_url = base_url
         self.api_key = api_key
-        self.model_name = model_name
         self._client = httpx_client or httpx.AsyncClient()
         self._headers = {
             "Authorization": f"Bearer {self.api_key}",
