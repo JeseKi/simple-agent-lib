@@ -10,15 +10,23 @@ Agent Lib - 智能体框架库
 - ⚡ 异常处理 - 智能的错误处理和恢复策略
 
 使用示例:
-    from simple_agent_lib import AutonomousAgent, Context, tool
+    from simple_agent_lib import AutonomousAgent, LLMAPIClient, tool
 
     @tool
     def get_weather(city: str) -> str:
         return f"{city}今天晴朗，温度25°C"
 
-    context = Context(max_tokens=4000, max_messages=50)
-    agent = AutonomousAgent(context=context, system_prompt="你是一个智能助手")
-    response = agent.run("北京天气怎么样？")
+    llm_client = LLMAPIClient("https://api.openai.com/v1", "your-key", "gpt-4")
+    
+    # 生产环境 - 默认无日志
+    agent = AutonomousAgent(llm_api_client=llm_client)
+    
+    # 开发环境 - 启用日志
+    agent = AutonomousAgent(llm_api_client=llm_client, debug_mode=True)
+    
+    async for event in agent.run("北京天气怎么样？"):
+        if hasattr(event, 'text'):
+            print(event.text, end='')
 """
 
 __version__ = "1.2.0"
