@@ -33,9 +33,6 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from loguru import logger
 
-# 移除默认的logger配置
-logger.remove()
-
 # 全局日志控制状态
 _LOGGING_ENABLED = False  # 默认禁用日志
 _CURRENT_LOG_LEVEL = "INFO"

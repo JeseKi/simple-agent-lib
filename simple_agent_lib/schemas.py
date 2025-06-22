@@ -207,6 +207,7 @@ class LLMEndReasonEvent(BaseModel):
 
 
 # Agent流事件联合类型
+# TODO: 从联合类型改成统一类型，符合 OpenAI API 的标准格式
 AgentStreamEvent = Union[
     ReasoningChunkEvent,
     ContentChunkEvent,
