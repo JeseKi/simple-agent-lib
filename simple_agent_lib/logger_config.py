@@ -2,10 +2,10 @@
 日志配置模块
 
 该模块包含:
-- 统一的日志配置
+- 统一的日志配置（不影响主应用程序）
 - 不同级别的日志记录器
 - 文件和控制台输出配置
-- 全局日志启用/禁用控制
+- 库专用日志启用/禁用控制
 
 公开接口:
 - enable_logging: 启用或禁用库的日志输出
@@ -26,21 +26,56 @@
 内部方法:
 - _LOGGING_ENABLED: 全局日志启用状态
 - _CURRENT_LOG_LEVEL: 当前日志级别
+- _HANDLER_IDS: 库专用的处理器ID列表
 """
 
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from loguru import logger
 
-# 全局日志控制状态
+# 库专用的日志控制状态
 _LOGGING_ENABLED = False  # 默认禁用日志
 _CURRENT_LOG_LEVEL = "INFO"
+# 存储库专用的处理器ID，用于精确管理自己的处理器
+_HANDLER_IDS: List[int] = []
+# 库的命名空间
+_LIBRARY_NAMESPACE = "simple_agent_lib"
+
+
+def _library_log_filter(record):
+    """
+    库专用的日志过滤器，只允许库命名空间的日志通过
+    """
+    extra_name = record.get("extra", {}).get("name", "")
+    if extra_name is None:
+        extra_name = ""
+    return str(extra_name).startswith(_LIBRARY_NAMESPACE)
+
+
+def _clear_library_handlers():
+    """
+    清理库专用的日志处理器，但不改变日志启用状态
+    """
+    global _HANDLER_IDS
+    
+    # 只移除库自己添加的处理器
+    for handler_id in _HANDLER_IDS:
+        try:
+            logger.remove(handler_id)
+        except ValueError:
+            # 处理器可能已经被移除，忽略错误
+            pass
+    
+    _HANDLER_IDS.clear()
 
 
 def enable_logging(enabled: bool = True, log_level: str = "INFO") -> None:
     """
     启用或禁用库的日志输出
+    
+    注意：此函数只管理simple_agent_lib库自己的日志处理器，
+    不会影响主应用程序的日志配置。
 
     Args:
         enabled: 是否启用日志
@@ -57,11 +92,17 @@ def enable_logging(enabled: bool = True, log_level: str = "INFO") -> None:
 
 
 def disable_logging() -> None:
-    """完全禁用库的日志输出"""
+    """
+    完全禁用库的日志输出
+    
+    注意：此函数只移除simple_agent_lib库自己添加的日志处理器，
+    不会影响主应用程序的日志配置。
+    """
     global _LOGGING_ENABLED
     _LOGGING_ENABLED = False
-    # 移除所有现有的日志处理器
-    logger.remove()
+    
+    # 清理库专用的处理器
+    _clear_library_handlers()
 
 
 def is_logging_enabled() -> bool:
@@ -70,15 +111,18 @@ def is_logging_enabled() -> bool:
 
 
 def setup_logger(
-    log_file: str = "temp.log",
+    log_file: str = "simple_agent_lib.log",
     log_level: str = "INFO",
     console_output: bool = True,
-    file_output: bool = True,
+    file_output: bool = False,  # 默认不输出到文件，减少对主应用的影响
     max_file_size: str = "10 MB",
     rotation_count: int = 3,
 ) -> None:
     """
     设置日志配置
+    
+    注意：此函数只添加simple_agent_lib库专用的日志处理器，
+    不会影响主应用程序的日志配置。
 
     Args:
         log_file: 日志文件路径
@@ -88,11 +132,11 @@ def setup_logger(
         max_file_size: 文件最大大小
         rotation_count: 文件轮转数量
     """
-    global _CURRENT_LOG_LEVEL
+    global _CURRENT_LOG_LEVEL, _LOGGING_ENABLED
     _CURRENT_LOG_LEVEL = log_level
 
-    # 先移除现有的处理器
-    logger.remove()
+    # 先清理现有的库专用处理器（但不改变_LOGGING_ENABLED状态）
+    _clear_library_handlers()
 
     # 如果日志被禁用，直接返回
     if not _LOGGING_ENABLED:
@@ -103,28 +147,32 @@ def setup_logger(
         console_format = (
             "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
             "<level>{level: <8}</level> | "
-            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+            f"<cyan>[{_LIBRARY_NAMESPACE}]</cyan> | "
+            "<cyan>{extra[name]}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
             "<level>{message}</level>"
         )
-        logger.add(
+        handler_id = logger.add(
             sys.stdout,
             format=console_format,
             level=log_level,
             colorize=True,
             backtrace=True,
             diagnose=True,
+            filter=_library_log_filter
         )
+        _HANDLER_IDS.append(handler_id)
 
     # 文件日志配置
     if file_output:
         file_format = (
             "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
             "{level: <8} | "
-            "{name}:{function}:{line} | "
+            f"[{_LIBRARY_NAMESPACE}] | "
+            "{extra[name]}:{function}:{line} | "
             "{message}"
         )
-        logger.add(
-            Path(Path.cwd() / log_file),
+        handler_id = logger.add(
+            Path(Path.cwd() / f"{_LIBRARY_NAMESPACE}_{log_file}"),
             format=file_format,
             level=log_level,
             rotation=max_file_size,
@@ -133,15 +181,19 @@ def setup_logger(
             encoding="utf-8",
             backtrace=True,
             diagnose=True,
+            filter=_library_log_filter
         )
+        _HANDLER_IDS.append(handler_id)
 
 
 def get_logger(name: Optional[str] = None):
     """
     获取日志器实例
+    
+    注意：返回的logger使用库专用的命名空间，不会与主应用程序的日志混淆。
 
     Args:
-        name: 日志器名称
+        name: 日志器名称（将自动添加库命名空间前缀）
 
     Returns:
         logger实例
@@ -175,9 +227,13 @@ def get_logger(name: Optional[str] = None):
 
         return NoOpLogger()
 
+    # 使用库专用的命名空间
     if name:
-        return logger.bind(name=name)
-    return logger
+        logger_name = f"{_LIBRARY_NAMESPACE}.{name}"
+    else:
+        logger_name = _LIBRARY_NAMESPACE
+    
+    return logger.bind(name=logger_name)
 
 
 # 预定义的日志记录函数
@@ -189,21 +245,21 @@ def log_tool_registration(
     """记录工具注册信息"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("工具系统")
-    logger.info(f"工具 '{tool_name}' 已注册，参数: {params}")
+    lib_logger = get_logger("工具系统")
+    lib_logger.info(f"工具 '{tool_name}' 已注册，参数: {params}")
     if schema_info:
-        logger.debug(f"工具 '{tool_name}' Schema详情: {schema_info}")
+        lib_logger.debug(f"工具 '{tool_name}' Schema详情: {schema_info}")
 
 
 def log_agent_iteration(iteration: int, total_iterations: Optional[int] = None):
     """记录Agent迭代信息"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("智能体")
+    lib_logger = get_logger("智能体")
     if total_iterations and total_iterations > 0:
-        logger.info(f"--- Agent迭代 {iteration}/{total_iterations} ---")
+        lib_logger.info(f"--- Agent迭代 {iteration}/{total_iterations} ---")
     else:
-        logger.info(f"--- Agent迭代 {iteration} ---")
+        lib_logger.info(f"--- Agent迭代 {iteration} ---")
 
 
 def log_tool_execution(
@@ -216,17 +272,17 @@ def log_tool_execution(
     """记录工具执行信息"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("工具执行")
+    lib_logger = get_logger("工具执行")
     if success:
-        logger.success(f"工具 '{tool_name}' 执行成功，参数: {args}")
+        lib_logger.success(f"工具 '{tool_name}' 执行成功，参数: {args}")
         if result is not None:
             # 限制结果长度避免日志过大
             result_str = str(result)
             if len(result_str) > 200:
                 result_str = result_str[:200] + "..."
-            logger.debug(f"工具 '{tool_name}' 结果: {result_str}")
+            lib_logger.debug(f"工具 '{tool_name}' 结果: {result_str}")
     else:
-        logger.error(f"工具 '{tool_name}' 执行失败，参数: {args}，错误: {error}")
+        lib_logger.error(f"工具 '{tool_name}' 执行失败，参数: {args}，错误: {error}")
 
 
 def log_llm_interaction(
@@ -235,15 +291,15 @@ def log_llm_interaction(
     """记录LLM交互信息"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("LLM交互")
+    lib_logger = get_logger("LLM交互")
     if error:
-        logger.error(f"LLM {action} 失败: {error}")
+        lib_logger.error(f"LLM {action} 失败: {error}")
         if details:
-            logger.debug(f"详细信息: {details}")
+            lib_logger.debug(f"详细信息: {details}")
     else:
-        logger.info(f"LLM {action}")
+        lib_logger.info(f"LLM {action}")
         if details:
-            logger.debug(f"详细信息: {details}")
+            lib_logger.debug(f"详细信息: {details}")
 
 
 def log_agent_event(
@@ -252,11 +308,11 @@ def log_agent_event(
     """记录Agent事件"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("Agent事件")
+    lib_logger = get_logger("Agent事件")
     if llm_response_id:
-        logger.debug(f"[{event_type}] ({llm_response_id}) {content}")
+        lib_logger.debug(f"[{event_type}] ({llm_response_id}) {content}")
     else:
-        logger.debug(f"[{event_type}] {content}")
+        lib_logger.debug(f"[{event_type}] {content}")
 
 
 def log_tool_call_parsing(
@@ -265,20 +321,20 @@ def log_tool_call_parsing(
     """记录工具调用解析"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("工具解析")
+    lib_logger = get_logger("工具解析")
     if success:
-        logger.debug(f"工具调用解析成功: {tool_name}({args})")
+        lib_logger.debug(f"工具调用解析成功: {tool_name}({args})")
     else:
-        logger.warning(f"工具调用解析失败: {tool_name}，错误: {error}")
+        lib_logger.warning(f"工具调用解析失败: {tool_name}，错误: {error}")
 
 
 def log_schema_generation(tool_name: str, schema: Dict[str, Any]):
     """记录Schema生成"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("Schema生成")
-    logger.debug(f"为工具 '{tool_name}' 生成Schema")
-    logger.trace(f"Schema内容: {schema}")
+    lib_logger = get_logger("Schema生成")
+    lib_logger.debug(f"为工具 '{tool_name}' 生成Schema")
+    lib_logger.trace(f"Schema内容: {schema}")
 
 
 def log_http_request(
@@ -290,11 +346,11 @@ def log_http_request(
     """记录HTTP请求"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("HTTP请求")
+    lib_logger = get_logger("HTTP请求")
     if error:
-        logger.error(f"{method} {url} 失败: {error}")
+        lib_logger.error(f"{method} {url} 失败: {error}")
     else:
-        logger.info(f"{method} {url} 响应码: {status_code}")
+        lib_logger.info(f"{method} {url} 响应码: {status_code}")
 
 
 def log_agent_completion(
@@ -303,14 +359,14 @@ def log_agent_completion(
     """记录Agent完成信息"""
     if not _LOGGING_ENABLED:
         return
-    logger = get_logger("智能体")
+    lib_logger = get_logger("智能体")
     if max_iterations and max_iterations > 0:
-        logger.info(
+        lib_logger.info(
             f"Agent执行完成，原因: {reason}，使用迭代: {iterations_used}/{max_iterations}"
         )
     else:
-        logger.info(f"Agent执行完成，原因: {reason}，使用迭代: {iterations_used}")
+        lib_logger.info(f"Agent执行完成，原因: {reason}，使用迭代: {iterations_used}")
 
 
-# 默认设置日志器
-setup_logger()
+# 库初始化时不自动设置日志器，等待用户显式启用
+# 这样可以避免在导入时就影响主应用程序的日志配置
