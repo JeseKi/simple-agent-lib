@@ -76,7 +76,8 @@ class Agent:
         """
         # 设置日志状态
         enable_logging(debug_mode, log_level)
-        self.llm_api_client = llm_api_client
+        self._llm_api_client = llm_api_client
+        self._max_iterations = -1
 
         if tools is not None:
             # 使用提供的工具列表
@@ -213,7 +214,7 @@ class Agent:
         self._sync_context_to_history()
 
     async def run(
-        self, initial_prompt: str, stream_mode: bool = True, max_iterations: int = -1
+        self, initial_prompt: str, stream_mode: bool = True, max_iterations: Optional[int] = None
     ) -> AsyncIterator[AgentStreamEvent]:
         """
         运行自主智能体
@@ -231,12 +232,15 @@ class Agent:
 
         current_llm_api_id_for_turn: Optional[str] = None
         iteration = 0
+        
+        if max_iterations is not None:
+            self._max_iterations = max_iterations
 
         # 无限迭代或有限迭代
-        while max_iterations == -1 or iteration < max_iterations:
+        while self._max_iterations == -1 or iteration < self._max_iterations:
             iteration += 1
             log_agent_iteration(
-                iteration, max_iterations if max_iterations > 0 else None
+                iteration, self._max_iterations if self._max_iterations > 0 else None
             )
 
             pending_tool_calls_from_llm: List[ToolCall] = []
@@ -244,7 +248,7 @@ class Agent:
 
             if stream_mode:
                 log_llm_interaction("调用LLM (流式模式)")
-                async for event in self.llm_api_client.chat_completion_stream(
+                async for event in self._llm_api_client.chat_completion_stream(
                     self.message_history, self.tool_schemas
                 ):
                     yield event
@@ -258,7 +262,7 @@ class Agent:
                             log_agent_completion(
                                 "LLM决定停止",
                                 iteration,
-                                max_iterations if max_iterations > 0 else None,
+                                self._max_iterations if self._max_iterations > 0 else None,
                             )
                             return
                         elif event.finish_reason == "tool_calls":
@@ -268,7 +272,7 @@ class Agent:
             else:
                 log_llm_interaction("调用LLM (非流式模式)")
                 llm_output: LLMOutput = (
-                    await self.llm_api_client.chat_completion_non_stream(
+                    await self._llm_api_client.chat_completion_non_stream(
                         self.message_history, self.tool_schemas
                     )
                 )
@@ -299,7 +303,7 @@ class Agent:
                     log_agent_completion(
                         "LLM决定停止",
                         iteration,
-                        max_iterations if max_iterations > 0 else None,
+                        self._max_iterations if self._max_iterations > 0 else None,
                     )
                     return
                 elif llm_output.finish_reason == "tool_calls":
@@ -312,7 +316,7 @@ class Agent:
                 log_agent_completion(
                     "LLM未请求工具且未明确停止",
                     iteration,
-                    max_iterations if max_iterations > 0 else None,
+                    self._max_iterations if self._max_iterations > 0 else None,
                 )
                 if llm_had_finish_reason and llm_had_finish_reason != "stop":
                     yield LLMEndReasonEvent(
@@ -325,7 +329,7 @@ class Agent:
                 log_agent_completion(
                     f"finish_reason为 '{llm_had_finish_reason}' 但无工具调用",
                     iteration,
-                    max_iterations if max_iterations > 0 else None,
+                    self._max_iterations if self._max_iterations > 0 else None,
                 )
                 return
 
@@ -354,5 +358,144 @@ class Agent:
 
             pending_tool_calls_from_llm.clear()
 
-            if iteration == max_iterations - 1:
-                logger.info(f"[警告] Agent达到最大迭代次数 ({max_iterations})。")
+            if iteration == self._max_iterations - 1:
+                logger.info(f"[警告] Agent达到最大迭代次数 ({self._max_iterations})。")
+    
+    async def continue_run(self, prompt: str, stream_mode: bool = True) -> AsyncIterator[AgentStreamEvent]:
+        """
+        继续运行自主智能体
+
+        Args:
+            prompt: 新的提示
+            stream_mode: 是否使用流式模式
+            max_iterations: 最大迭代次数，-1表示不限制迭代次数
+        """
+        self._add_user_message_to_context(prompt)
+
+        current_llm_api_id_for_turn: Optional[str] = None
+        iteration = 0
+
+        # 无限迭代或有限迭代
+        while self._max_iterations == -1 or iteration < self._max_iterations:
+            iteration += 1
+            log_agent_iteration(
+                iteration, self._max_iterations if self._max_iterations > 0 else None
+            )
+
+            pending_tool_calls_from_llm: List[ToolCall] = []
+            llm_had_finish_reason: Optional[str] = None
+
+            if stream_mode:
+                log_llm_interaction("调用LLM (流式模式)")
+                async for event in self._llm_api_client.chat_completion_stream(
+                    self.message_history, self.tool_schemas
+                ):
+                    yield event
+                    current_llm_api_id_for_turn = event.llm_response_id
+
+                    if isinstance(event, ToolCallCompleteEvent):
+                        pending_tool_calls_from_llm.append(event.tool_call)
+                    elif isinstance(event, LLMEndReasonEvent):
+                        llm_had_finish_reason = event.finish_reason
+                        if event.finish_reason == "stop":
+                            log_agent_completion(
+                                "LLM决定停止",
+                                iteration,
+                                self._max_iterations if self._max_iterations > 0 else None,
+                            )
+                            return
+                        elif event.finish_reason == "tool_calls":
+                            logger.info(
+                                f"LLM请求 {len(pending_tool_calls_from_llm)} 个工具"
+                            )
+            else:
+                log_llm_interaction("调用LLM (非流式模式)")
+                llm_output: LLMOutput = (
+                    await self._llm_api_client.chat_completion_non_stream(
+                        self.message_history, self.tool_schemas
+                    )
+                )
+                current_llm_api_id_for_turn = llm_output.id
+                llm_had_finish_reason = llm_output.finish_reason
+
+                # 产生等效事件
+                if llm_output.aggregated_reasoning_content:
+                    yield ReasoningChunkEvent(
+                        text=llm_output.aggregated_reasoning_content,
+                        llm_response_id=current_llm_api_id_for_turn,
+                    )
+                if llm_output.aggregated_content:
+                    yield ContentChunkEvent(
+                        text=llm_output.aggregated_content,
+                        llm_response_id=current_llm_api_id_for_turn,
+                    )
+
+                pending_tool_calls_from_llm.extend(llm_output.tool_calls)
+
+                if llm_output.finish_reason:
+                    yield LLMEndReasonEvent(
+                        finish_reason=llm_output.finish_reason,
+                        llm_response_id=current_llm_api_id_for_turn,
+                    )
+
+                if llm_output.finish_reason == "stop":
+                    log_agent_completion(
+                        "LLM决定停止",
+                        iteration,
+                        self._max_iterations if self._max_iterations > 0 else None,
+                    )
+                    return
+                elif llm_output.finish_reason == "tool_calls":
+                    logger.info(f"LLM请求 {len(pending_tool_calls_from_llm)} 个工具")
+
+            if (
+                not pending_tool_calls_from_llm
+                and llm_had_finish_reason != "tool_calls"
+            ):
+                log_agent_completion(
+                    "LLM未请求工具且未明确停止",
+                    iteration,
+                    self._max_iterations if self._max_iterations > 0 else None,
+                )
+                if llm_had_finish_reason and llm_had_finish_reason != "stop":
+                    yield LLMEndReasonEvent(
+                        finish_reason=llm_had_finish_reason,
+                        llm_response_id=current_llm_api_id_for_turn,
+                    )
+                return
+
+            if not pending_tool_calls_from_llm:
+                log_agent_completion(
+                    f"finish_reason为 '{llm_had_finish_reason}' 但无工具调用",
+                    iteration,
+                    self._max_iterations if self._max_iterations > 0 else None,
+                )
+                return
+
+            # 将助手的工具调用请求添加到上下文
+            if pending_tool_calls_from_llm:
+                self._add_assistant_response_to_context(
+                    tool_calls=pending_tool_calls_from_llm
+                )
+
+            # 执行工具
+            executed_tool_results: List[ToolResult] = []
+            logger.debug(f"  执行 {len(pending_tool_calls_from_llm)} 个工具...")
+            for tool_to_call in pending_tool_calls_from_llm:
+                logger.debug(f"    调用: {tool_to_call.name} 参数: {tool_to_call.args}")
+                result = await self._execute_tool(tool_to_call)
+                executed_tool_results.append(result)
+
+            # 产生所有工具结果
+            yield AllToolResultsEvent(
+                results=executed_tool_results,
+                llm_response_id=current_llm_api_id_for_turn,
+            )
+
+            # 将工具结果添加到上下文
+            self._add_tool_results_to_context(executed_tool_results)
+
+            pending_tool_calls_from_llm.clear()
+
+            if iteration == self._max_iterations - 1:
+                logger.info(f"[警告] Agent达到最大迭代次数 ({self._max_iterations})。")
