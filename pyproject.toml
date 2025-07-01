@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "simple-agent-lib"
-version = "1.2.１"
+version = "1.2.1"
 description = "智能体框架库 - 提供上下文记忆、工具调用和LLM交互功能"
 readme = "README.md"
 license = {text = "MIT"}
