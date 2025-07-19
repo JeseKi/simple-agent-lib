@@ -245,6 +245,8 @@ class Agent:
 
             pending_tool_calls_from_llm: List[ToolCall] = []
             llm_had_finish_reason: Optional[str] = None
+            # 收集LLM的文本内容
+            llm_content_chunks: List[str] = []
 
             if stream_mode:
                 log_llm_interaction("调用LLM (流式模式)")
@@ -254,11 +256,19 @@ class Agent:
                     yield event
                     current_llm_api_id_for_turn = event.llm_response_id
 
-                    if isinstance(event, ToolCallCompleteEvent):
+                    if isinstance(event, ContentChunkEvent):
+                        # 收集文本内容块
+                        llm_content_chunks.append(event.text)
+                    elif isinstance(event, ToolCallCompleteEvent):
                         pending_tool_calls_from_llm.append(event.tool_call)
                     elif isinstance(event, LLMEndReasonEvent):
                         llm_had_finish_reason = event.finish_reason
                         if event.finish_reason == "stop":
+                            # 如果只有文本内容而没有工具调用，需要添加到上下文
+                            if llm_content_chunks and not pending_tool_calls_from_llm:
+                                self._add_assistant_response_to_context(
+                                    content="".join(llm_content_chunks)
+                                )
                             log_agent_completion(
                                 "LLM决定停止",
                                 iteration,
@@ -290,6 +300,8 @@ class Agent:
                         text=llm_output.aggregated_content,
                         llm_response_id=current_llm_api_id_for_turn,
                     )
+                    # 收集非流式模式的文本内容
+                    llm_content_chunks.append(llm_output.aggregated_content)
 
                 pending_tool_calls_from_llm.extend(llm_output.tool_calls)
 
@@ -300,6 +312,11 @@ class Agent:
                     )
 
                 if llm_output.finish_reason == "stop":
+                    # 如果只有文本内容而没有工具调用，需要添加到上下文
+                    if llm_content_chunks and not pending_tool_calls_from_llm:
+                        self._add_assistant_response_to_context(
+                            content="".join(llm_content_chunks)
+                        )
                     log_agent_completion(
                         "LLM决定停止",
                         iteration,
@@ -333,9 +350,11 @@ class Agent:
                 )
                 return
 
-            # 将助手的工具调用请求添加到上下文
+            # 将助手的工具调用请求添加到上下文（同时包含文本内容）
             if pending_tool_calls_from_llm:
+                assistant_content = "".join(llm_content_chunks) if llm_content_chunks else None
                 self._add_assistant_response_to_context(
+                    content=assistant_content,
                     tool_calls=pending_tool_calls_from_llm
                 )
 
@@ -384,6 +403,8 @@ class Agent:
 
             pending_tool_calls_from_llm: List[ToolCall] = []
             llm_had_finish_reason: Optional[str] = None
+            # 收集LLM的文本内容
+            llm_content_chunks: List[str] = []
 
             if stream_mode:
                 log_llm_interaction("调用LLM (流式模式)")
@@ -393,11 +414,19 @@ class Agent:
                     yield event
                     current_llm_api_id_for_turn = event.llm_response_id
 
-                    if isinstance(event, ToolCallCompleteEvent):
+                    if isinstance(event, ContentChunkEvent):
+                        # 收集文本内容块
+                        llm_content_chunks.append(event.text)
+                    elif isinstance(event, ToolCallCompleteEvent):
                         pending_tool_calls_from_llm.append(event.tool_call)
                     elif isinstance(event, LLMEndReasonEvent):
                         llm_had_finish_reason = event.finish_reason
                         if event.finish_reason == "stop":
+                            # 如果只有文本内容而没有工具调用，需要添加到上下文
+                            if llm_content_chunks and not pending_tool_calls_from_llm:
+                                self._add_assistant_response_to_context(
+                                    content="".join(llm_content_chunks)
+                                )
                             log_agent_completion(
                                 "LLM决定停止",
                                 iteration,
@@ -429,6 +458,8 @@ class Agent:
                         text=llm_output.aggregated_content,
                         llm_response_id=current_llm_api_id_for_turn,
                     )
+                    # 收集非流式模式的文本内容
+                    llm_content_chunks.append(llm_output.aggregated_content)
 
                 pending_tool_calls_from_llm.extend(llm_output.tool_calls)
 
@@ -439,6 +470,11 @@ class Agent:
                     )
 
                 if llm_output.finish_reason == "stop":
+                    # 如果只有文本内容而没有工具调用，需要添加到上下文
+                    if llm_content_chunks and not pending_tool_calls_from_llm:
+                        self._add_assistant_response_to_context(
+                            content="".join(llm_content_chunks)
+                        )
                     log_agent_completion(
                         "LLM决定停止",
                         iteration,
@@ -472,9 +508,11 @@ class Agent:
                 )
                 return
 
-            # 将助手的工具调用请求添加到上下文
+            # 将助手的工具调用请求添加到上下文（同时包含文本内容）
             if pending_tool_calls_from_llm:
+                assistant_content = "".join(llm_content_chunks) if llm_content_chunks else None
                 self._add_assistant_response_to_context(
+                    content=assistant_content,
                     tool_calls=pending_tool_calls_from_llm
                 )
 
